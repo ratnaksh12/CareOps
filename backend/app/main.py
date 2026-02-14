@@ -7,27 +7,50 @@ from app.database import engine, Base
 # Import all models so they are registered with Base
 from app.models import *  # noqa
 
-settings = get_settings()
+import logging
+import traceback
+import sys
+
+logger = logging.getLogger("app")
+
+try:
+    settings = get_settings()
+except Exception as e:
+    print("CRITICAL: Failed to load settings!")
+    traceback.print_exc()
+    sys.exit(1)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create tables on startup (dev only)
-    print(f"DEBUG: Creating tables. Registered models: {list(Base.metadata.tables.keys())}")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("DEBUG: Tables created.")
+    try:
+        print(f"DEBUG: Attempting to connect to database. URL: {settings.DATABASE_URL.split('@')[-1]}") # Log only host part
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("DEBUG: Tables created/verified successfully.")
+    except Exception as e:
+        print("WARNING: Could not connect to database or create tables.")
+        print(f"Error detail: {e}")
+        traceback.print_exc()
+        # On Render, we might want to continue and let the health check fail later 
+        # OR exit. Let's not exit here so we can at least see the logs via /health if it boots locally.
     
     # Start Email Poller
-    from app.services.email_poller import email_poller
-    import asyncio
-    poller_task = asyncio.create_task(email_poller.start())
+    try:
+        from app.services.email_poller import email_poller
+        import asyncio
+        poller_task = asyncio.create_task(email_poller.start())
+    except Exception as e:
+        print(f"ERROR: Failed to start email poller: {e}")
+        poller_task = None
     
     yield
     
     # Validation/Shutdown
-    email_poller.running = False
-    await poller_task
+    if poller_task:
+        email_poller.running = False
+        await poller_task
 
 
 app = FastAPI(

@@ -1,5 +1,8 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from pydantic import field_validator
+import json
+from typing import Any
 
 
 class Settings(BaseSettings):
@@ -18,6 +21,18 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000"]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v: Any) -> list[str]:
+        if isinstance(v, str):
+            try:
+                # Try parsing as JSON first
+                return json.loads(v)
+            except (json.JSONDecodeError, TypeError):
+                # Fallback to comma-separated
+                return [i.strip() for i in v.split(",") if i.strip()]
+        return v
 
     # Email (SMTP)
     SMTP_HOST: str = "smtp.gmail.com"
