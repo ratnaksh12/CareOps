@@ -21,17 +21,7 @@ except Exception as e:
     sys.exit(1)
 
 
-from fastapi import Request
-from fastapi.responses import JSONResponse
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    print(f"GLOBAL ERROR: {exc}")
-    traceback.print_exc()
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal Server Error", "error": str(exc)},
-    )
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -77,6 +67,18 @@ app = FastAPI(
     title=settings.APP_NAME,
     lifespan=lifespan,
 )
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"GLOBAL ERROR: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)},
+    )
 
 # CORS
 print(f"DEBUG: Setting up CORS with origins: {settings.CORS_ORIGINS}")
