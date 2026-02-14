@@ -124,3 +124,23 @@ app.include_router(gcalendar_router, prefix=settings.API_V1_PREFIX)
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME}
+
+@app.get("/debug-db")
+async def debug_db():
+    try:
+        from sqlalchemy import text
+        print("DEBUG: Testing DB connection...")
+        async with engine.connect() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            return {
+                "status": "connected", 
+                "result": result.scalar(), 
+                "db_url": settings.DATABASE_URL.split("@")[-1] # Show only host for security
+            }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error", 
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
