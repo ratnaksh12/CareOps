@@ -21,6 +21,18 @@ except Exception as e:
     sys.exit(1)
 
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"GLOBAL ERROR: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)},
+    )
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create tables on startup (dev only)
@@ -29,12 +41,20 @@ async def lifespan(app: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         print("DEBUG: Tables created/verified successfully.")
+        
+        # Run Seed Data
+        try:
+            from seed_data import seed
+            await seed()
+            print("DEBUG: Seed data checked/applied.")
+        except Exception as seed_err:
+            print(f"WARNING: Seed logic failed: {seed_err}")
+            traceback.print_exc()
+
     except Exception as e:
         print("WARNING: Could not connect to database or create tables.")
         print(f"Error detail: {e}")
         traceback.print_exc()
-        # On Render, we might want to continue and let the health check fail later 
-        # OR exit. Let's not exit here so we can at least see the logs via /health if it boots locally.
     
     # Start Email Poller
     try:
