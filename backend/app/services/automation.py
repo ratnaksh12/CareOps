@@ -147,8 +147,9 @@ class AutomationService:
         if not contact:
             return
 
-        # 1. If Staff replied, send Email to Customer
-        if message.sender_type == SenderType.STAFF.value:
+        # 1. If Staff replied, send Email to Customer AND Check for Inventory in previous message
+        if message.sender_type == SenderType.STAFF or message.sender_type == "staff":
+            # --- EMAIL NOTIFICATION ---
             if contact.email:
                 subject = "New message from CareOps"
                 if conversation.workspace_id:
@@ -158,17 +159,46 @@ class AutomationService:
                     if ws:
                         subject = f"New message from {ws.name}"
                 
-                logger.info(f"Attempting to send email to {contact.email} with subject: {subject}")
+                logger.info(f"Attempting to send email to {contact.email} | Subject: {subject}")
                 success = EmailProvider.send_email(
                     to_email=contact.email,
                     subject=subject,
                     body=f"Hi {contact.name},\n\nOur team has replied to your inquiry:\n\n\"{message.content}\"\n\nYou can reply to this email to continue the conversation.\n\nBest,\nThe Team"
                 )
-                logger.info(f"Email send result: {success}")
+                if success:
+                    logger.info(f"✅ Email sent successfully to {contact.email}")
+                else:
+                    logger.error(f"❌ Failed to send email to {contact.email}")
 
-        # 2. If Contact sent a message, scan for Inventory Keywords
-        elif message.sender_type == SenderType.CONTACT:
-            await AutomationService.scan_message_for_inventory(message, db)
+            # --- INVENTORY DEDUCTION (Scan previous message) ---
+            # User request: "when replied to the user it will deducted"
+            # Logic: Fetch the last message from the Contact
+            prev_msg_result = await db.execute(
+                select(Message)
+                .where(
+                    Message.conversation_id == conversation.id,
+                    Message.created_at < message.created_at,
+                    (Message.sender_type == SenderType.CONTACT) | (Message.sender_type == "contact")
+                )
+                .order_by(desc(Message.created_at))
+                .limit(1)
+            )
+            prev_msg = prev_msg_result.scalar_one_or_none()
+            
+            if prev_msg:
+                logger.info(f"Scanning PREVIOUS message ({prev_msg.id}) for inventory deduction...")
+                await AutomationService.scan_message_for_inventory(prev_msg, db)
+            else:
+                logger.info("No previous contact message found to scan for inventory.")
+
+        # 2. If Contact sent a message, scan for Inventory Keywords (Auto-deduct immediate? Maybe optional)
+        elif message.sender_type == SenderType.CONTACT or message.sender_type == "contact":
+             # We can keep this or disable it if the user strictly wants "on reply". 
+             # The user said "and when replied to the user it will deducted".
+             # This implies we should NOT deduct immediately, but wait for reply.
+             # So I will COMMENT OUT the immediate scan here to strictly follow the "on reply" req.
+             logger.info("Skipping immediate inventory scan (waiting for staff reply).")
+             # await AutomationService.scan_message_for_inventory(message, db)
 
     @staticmethod
     async def scan_message_for_inventory(message, db: AsyncSession):

@@ -1,0 +1,18 @@
+--- WORKSPACES ---
+WS: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5 | Name: Roonie Surgicals
+WS: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b | Name: Ratnaksh Automations
+WS: ws-default | Name: CareOps Demo Health
+
+--- USERS ---
+User: ratnakshtyagi69@gmail.com | WS_ID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5
+User: ratnakshtyagi821@gmail.com | WS_ID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5
+User: tratnaksh@gmail.com | WS_ID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5
+User: ronnietyagi821@gmail.com | WS_ID: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b
+User: admin@careops.com | WS_ID: ws-default
+
+--- CONTACTS (Last 5) ---
+Contact: ratnakshtyagi821@gmail.com | WS_ID: ws-default | Created: 2026-02-14 17:35:40.780275
+Contact: test_d66aa454-3112-431a-8011-d625ea321d52@example.com | WS_ID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5 | Created: 2026-02-14 17:14:15.357559
+Contact: tratnaksh@gmail.com | WS_ID: ws-default | Created: 2026-02-14 17:11:10.478291
+Contact: ratnakshtyagi821@gmail.com | WS_ID: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b | Created: 2026-02-14 06:41:05.480597
+Contact: tratnaksh@gmail.com | WS_ID: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b | Created: 2026-02-14 05:39:24.085745
