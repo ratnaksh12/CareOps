@@ -25,7 +25,18 @@ else:
     engine_kwargs["pool_size"] = 5
     engine_kwargs["max_overflow"] = 10
 
-engine = create_async_engine(settings.DATABASE_URL, **engine_kwargs)
+# Capture initialization error for debug endpoint
+db_init_error = None
+
+try:
+    engine = create_async_engine(settings.DATABASE_URL, **engine_kwargs)
+except Exception as e:
+    import traceback
+    print(f"CRITICAL: Failed to create DB engine with URL: {settings.DATABASE_URL}. Error: {e}")
+    traceback.print_exc()
+    db_init_error = f"Engine creation failed: {str(e)}"
+    # Fallback to local SQLite so app can boot and show debug info
+    engine = create_async_engine("sqlite+aiosqlite:///./recovery.db", echo=True)
 
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

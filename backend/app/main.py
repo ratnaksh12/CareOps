@@ -136,7 +136,16 @@ async def debug_db():
     
     # Check what the engine is actually using
     try:
-        from app.database import engine
+        from app.database import engine, db_init_error
+        
+        if db_init_error:
+            return {
+                "status": "error",
+                "error": "Database Initialization Failed",
+                "detail": db_init_error,
+                "hint": "Your DATABASE_URL environment variable is likely malformed."
+            }
+
         # Verify if engine.url contains an IP or hostname
         debug_info["engine_url_host"] = engine.url.host
         debug_info["engine_url_port"] = engine.url.port
