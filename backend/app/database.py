@@ -17,9 +17,13 @@ else:
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
+    
+    # CRITICAL: We MUST explicitly set statement_cache_size to 0 for Supabase Transaction Mode
+    # Use the specific key 'statement_cache_size' inside connect_args for asyncpg
     engine_kwargs["connect_args"] = {
         "ssl": ssl_context,
-        "prepared_statement_cache_size": 0  # Disable prepared statements for pgbouncer/pooler compatibility
+        "statement_cache_size": 0,    # For asyncpg
+        "prepared_statement_cache_size": 0 # Redundant but safe
     }
     engine_kwargs["pool_pre_ping"] = True
     engine_kwargs["pool_size"] = 5
