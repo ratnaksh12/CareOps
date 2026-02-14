@@ -127,20 +127,32 @@ async def health():
 
 @app.get("/debug-db")
 async def debug_db():
+    import socket
+    import traceback
+    from sqlalchemy import text
+    
+    debug_info = {}
+    host = settings.DATABASE_URL.split("@")[-1].split(":")[0]
+    
     try:
-        from sqlalchemy import text
+        debug_info["dns_resolution"] = socket.getaddrinfo(host, None)
+    except Exception as e:
+        debug_info["dns_error"] = str(e)
+
+    try:
         print("DEBUG: Testing DB connection...")
         async with engine.connect() as conn:
             result = await conn.execute(text("SELECT 1"))
             return {
                 "status": "connected", 
                 "result": result.scalar(), 
-                "db_url": settings.DATABASE_URL.split("@")[-1] # Show only host for security
+                "db_url_host": host,
+                "debug_info": debug_info
             }
     except Exception as e:
-        import traceback
         return {
             "status": "error", 
             "error": str(e),
-            "traceback": traceback.format_exc()
+            "traceback": traceback.format_exc(),
+            "debug_info": debug_info
         }
