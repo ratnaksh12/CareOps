@@ -134,10 +134,20 @@ async def debug_db():
     debug_info = {}
     host = settings.DATABASE_URL.split("@")[-1].split(":")[0]
     
+    # Check what the engine is actually using
     try:
-        debug_info["dns_resolution"] = socket.getaddrinfo(host, None)
+        from app.database import engine
+        # Verify if engine.url contains an IP or hostname
+        debug_info["engine_url_host"] = engine.url.host
+        debug_info["engine_url_port"] = engine.url.port
     except Exception as e:
-        debug_info["dns_error"] = str(e)
+        debug_info["engine_inspect_error"] = str(e)
+
+    # Manual IPv4 Resolution Test
+    try:
+        debug_info["dns_resolution_ipv4"] = socket.getaddrinfo(host, None, socket.AF_INET)
+    except Exception as e:
+        debug_info["dns_error_ipv4"] = str(e)
 
     try:
         print("DEBUG: Testing DB connection...")
@@ -146,7 +156,7 @@ async def debug_db():
             return {
                 "status": "connected", 
                 "result": result.scalar(), 
-                "db_url_host": host,
+                "original_host": host,
                 "debug_info": debug_info
             }
     except Exception as e:
