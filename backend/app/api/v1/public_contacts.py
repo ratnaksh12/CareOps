@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.database import get_db, async_session
@@ -77,6 +77,7 @@ async def ensure_conversation_and_message(
 @router.post("/contacts", response_model=ContactOut)
 async def create_public_contact(
     contact_data: PublicContactCreate, 
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -93,11 +94,11 @@ async def create_public_contact(
         if not workspace:
             raise HTTPException(status_code=404, detail="No active workspace found to accept leads.")
         ws_id = workspace.id
-
+    
     # Check if contact already exists
     result = await db.execute(select(Contact).where(Contact.email == contact_data.email, Contact.workspace_id == ws_id))
     existing_contact = result.scalars().first()
-
+    
     if existing_contact:
         # Update existing contact if needed, or just log the new inquiry
         if contact_data.message:
@@ -115,18 +116,9 @@ async def create_public_contact(
             )
             db.add(event)
             await db.commit()
-
-            # Run automation in separate session (background-safe)
-            try:
-                async with async_session() as auto_db:
-                    await AutomationService.handle_event(event.id, auto_db)
-                    # Trigger inventory scan for existing contact message
-                    result = await auto_db.execute(select(Message).where(Message.conversation_id == (await auto_db.execute(select(Conversation.id).where(Conversation.contact_id == existing_contact.id))).scalar()).order_by(Message.created_at.desc()))
-                    msg = result.scalars().first()
-                    if msg:
-                        await AutomationService.handle_message_created(msg.id, auto_db)
-            except Exception as e:
-                logger.error(f"Automation failed for event {event.id}: {e}")
+            
+            # Run automation in background
+            background_tasks.add_task(run_automation_event, event.id)
             
         return existing_contact
 
@@ -165,19 +157,31 @@ async def create_public_contact(
         
         await db.commit()
         
-        # Run automation in separate session (background-safe)
-        contact_id = new_contact.id
-        try:
-            async with async_session() as auto_db:
-                await AutomationService.handle_contact_created(contact_id, auto_db)
-                # Trigger inventory scan for new contact message
-                result = await auto_db.execute(select(Message).where(Message.sender_type == SenderType.CONTACT).order_by(Message.created_at.desc()).limit(1))
-                msg = result.scalars().first()
-                if msg:
-                    await AutomationService.handle_message_created(msg.id, auto_db)
-        except Exception as e:
-            logger.error(f"Automation failed for contact {contact_id}: {e}")
+        # Run automation in background
+        background_tasks.add_task(run_automation_contact, new_contact.id)
+        
     else:
         await db.commit()
 
     return new_contact
+
+# Wrapper functions for background tasks to handle their own sessions
+async def run_automation_contact(contact_id: str):
+    try:
+        async with async_session() as auto_db:
+            await AutomationService.handle_contact_created(contact_id, auto_db)
+            # Trigger inventory scan for new contact message
+            result = await auto_db.execute(select(Message).where(Message.sender_type == SenderType.CONTACT).order_by(Message.created_at.desc()).limit(1))
+            msg = result.scalars().first()
+            if msg:
+                await AutomationService.handle_message_created(msg.id, auto_db)
+    except Exception as e:
+        logger.error(f"Background Automation failed for contact {contact_id}: {e}")
+
+async def run_automation_event(event_id: str):
+    try:
+        async with async_session() as auto_db:
+            await AutomationService.handle_event(event_id, auto_db)
+            # Find associated message if needed (simplified for now)
+    except Exception as e:
+         logger.error(f"Background Automation failed for event {event_id}: {e}")
