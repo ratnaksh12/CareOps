@@ -31,14 +31,33 @@ class Settings(BaseSettings):
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors_origins(cls, v: Any) -> list[str]:
+        origins = []
         if isinstance(v, str):
             try:
-                # Try parsing as JSON first
-                return json.loads(v)
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    origins = parsed
+                else:
+                    origins = [str(parsed)]
             except (json.JSONDecodeError, TypeError):
-                # Fallback to comma-separated
-                return [i.strip() for i in v.split(",") if i.strip()]
-        return v
+                origins = [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, list):
+            origins = v
+        
+        # Force production and local origins
+        # Important: CORS origins MUST NOT have subpaths like /CareOps
+        required = [
+            "https://ratnaksh12.github.io",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://0.0.0.0:3000"
+        ]
+        for r in required:
+            if r not in origins:
+                origins.append(r)
+        
+        # Clean origins (remove trailing slashes)
+        return list(set(orig.rstrip("/") for orig in origins if orig))
 
     # Email (SMTP)
     SMTP_HOST: str = "smtp.gmail.com"
