@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
@@ -96,6 +96,7 @@ async def list_staff(
 @router.post("/invite", response_model=StaffOut)
 async def invite_staff(
     data: StaffInvite,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -133,11 +134,12 @@ async def invite_staff(
     )
     db.add(staff_role)
 
-    # Send Invitation Email
-    EmailProvider.send_email(
-        to_email=new_user.email,
-        subject="You've been invited to CareOps",
-        body=f"Hi {new_user.full_name},\n\nYou have been invited to join the CareOps workspace.\n\nYour temporary password is: {data.password}\n\nPlease log in and change your password.\n\nBest,\nThe CareOps Team"
+    # Send Invitation Email - BACKGROUND TASK
+    background_tasks.add_task(
+        send_invite_email, 
+        email=new_user.email, 
+        name=new_user.full_name, 
+        password=data.password
     )
 
     return StaffOut(
@@ -150,6 +152,13 @@ async def invite_staff(
         can_bookings=staff_role.can_bookings,
         can_forms=staff_role.can_forms,
         can_inventory=staff_role.can_inventory,
+    )
+
+def send_invite_email(email: str, name: str, password: str):
+    EmailProvider.send_email(
+        to_email=email,
+        subject="You've been invited to CareOps",
+        body=f"Hi {name},\n\nYou have been invited to join the CareOps workspace.\n\nYour temporary password is: {password}\n\nPlease log in and change your password.\n\nBest,\nThe CareOps Team"
     )
 
 

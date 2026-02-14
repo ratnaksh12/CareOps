@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -62,6 +62,7 @@ async def list_messages(
 async def send_message(
     conversation_id: str,
     data: MessageCreate,
+    background_tasks: BackgroundTasks,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -95,19 +96,22 @@ async def send_message(
     await db.flush()
     await db.refresh(message)
     
-    # Trigger automation for staff reply (send email)
-    from app.services.automation import AutomationService
-    # Trigger automation for staff reply (send email)
-    from app.services.automation import AutomationService
-    # from app.database import async_session
-    try:
-        # Use the same session (db) since the transaction is still open and we need to see the uncommitted message
-        await AutomationService.handle_message_created(message.id, db)
-    except Exception as e:
-        import logging
-        logging.getLogger("conversations").error(f"Automation failed for message {message.id}: {e}")
+    # Trigger automation for staff reply (send email) - BACKGROUND TASK
+    background_tasks.add_task(run_message_automation, message.id)
 
     return MessageOut.model_validate(message)
+
+# Background task wrapper
+async def run_message_automation(message_id: str):
+    from app.services.automation import AutomationService
+    from app.database import async_session
+    import logging
+    
+    try:
+        async with async_session() as db:
+            await AutomationService.handle_message_created(message_id, db)
+    except Exception as e:
+        logging.getLogger("conversations").error(f"Automation failed for message {message_id}: {e}")
 
 
 @router.patch("/{conversation_id}/status")
