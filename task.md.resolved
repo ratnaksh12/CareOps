@@ -1,0 +1,69 @@
+# CareOps — Unified Operations Platform
+
+## Phase 1: Project Scaffolding & Foundation
+- [ ] Initialize Next.js 14+ frontend with TypeScript, TailwindCSS, ShadCN UI
+- [ ] Initialize FastAPI backend with project structure (API/Service/Repository layers)
+- [ ] Set up PostgreSQL database schema with SQLAlchemy 2.0 + Alembic
+- [ ] Configure Supabase Auth integration
+- [ ] Create shared types/models
+
+## Phase 2: Core Data Models & Auth
+- [ ] Implement all database models (users, workspaces, contacts, etc.)
+- [ ] Create Alembic migration
+- [ ] Implement auth endpoints (register, login, session)
+- [ ] Implement RBAC (Admin vs Staff roles)
+- [ ] Frontend auth pages (login, register)
+
+## Phase 3: Workspace Onboarding Module
+- [ ] Multi-step onboarding wizard (8 steps)
+- [ ] Workspace creation API
+- [ ] Integration setup (email/SMS placeholders)
+- [ ] Booking type configuration
+- [ ] Staff setup & permissions
+- [ ] Activation validation
+
+## Phase 4: Unified Inbox Module
+- [ ] Conversations & Messages API
+- [ ] Contact management
+- [ ] Unified inbox UI with real-time (WebSocket)
+- [ ] Message tagging & status indicators
+
+## Phase 5: Booking Management Module
+- [ ] Booking CRUD API
+- [ ] Public booking page
+- [ ] Staff booking dashboard
+- [ ] Calendar integration (Google Calendar placeholder)
+- [ ] Booking state management
+
+## Phase 6: Forms Management Module
+- [ ] Form builder API
+- [ ] Form submission tracking
+- [ ] Document upload (S3/Supabase storage placeholder)
+- [ ] Automated reminders
+
+## Phase 7: Inventory Monitoring Module
+- [ ] Inventory items CRUD
+- [ ] Stock tracking & threshold alerts
+- [ ] Resource allocation per booking
+- [ ] Usage deduction logic
+
+## Phase 8: Dashboard Module
+- [ ] Booking overview cards
+- [ ] Leads & conversations summary
+- [ ] Forms tracking summary
+- [ ] Inventory alerts panel
+- [ ] Actionable alerts with deep links
+
+## Phase 9: Automation Engine
+- [ ] Event-based automation system
+- [ ] Welcome message automation
+- [ ] Booking confirmation/reminder
+- [ ] Form reminder automation
+- [ ] Low inventory alerts
+- [ ] Staff reply pause logic
+
+## Phase 10: Polish & Verification
+- [ ] End-to-end testing
+- [ ] Performance verification
+- [ ] Security review (RBAC, rate limiting)
+- [ ] Final UI polish

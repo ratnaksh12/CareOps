@@ -1,0 +1,20 @@
+=== DEBUG START ===
+
+--- USERS ---
+User: ratnakshtyagi69@gmail.com | WorkspaceID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5
+User: ratnakshtyagi821@gmail.com | WorkspaceID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5
+User: tratnaksh@gmail.com | WorkspaceID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5
+User: ronnietyagi821@gmail.com | WorkspaceID: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b
+
+--- WORKSPACES ---
+Workspace: Roonie Surgicals | ID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5 | CreatedAt: 2026-02-13 16:18:57.165932
+Workspace: Ratnaksh Automations | ID: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b | CreatedAt: 2026-02-14 05:36:19.273785
+
+--- BOOKING TYPES ---
+BT: xkbxh | ID: 0abe44a6-2f94-4423-96e8-2cdd093605c3 | WS_ID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5 | Active: True
+BT: Consultation | ID: ab64f839-de8f-45c2-94f0-dfb0cfa544b1 | WS_ID: 8d4593e8-5d2f-48b1-ae1d-0166297d1ec5 | Active: True
+BT: Consultaion | ID: 7ec161c4-527f-4ea9-b803-8323461e5307 | WS_ID: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b | Active: True
+BT: Consultation | ID: 1bab224a-27e2-455d-9b00-f05ae2b13d43 | WS_ID: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b | Active: True
+BT: Board Members Meeting | ID: 6ebb0d0f-fb9e-4423-aba2-88da97a4a9ad | WS_ID: 3d8f47a8-3af3-4071-a8f2-60f373b5fa7b | Active: True
+
+=== DEBUG END ===

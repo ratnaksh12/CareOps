@@ -1,0 +1,253 @@
+# CareOps — Unified Operations Platform — Implementation Plan
+
+This plan covers a full-stack platform with a **Next.js 14+ frontend** and a **FastAPI backend**, communicating via REST APIs, with **PostgreSQL** as the database.
+
+> [!IMPORTANT]
+> **Scope Caveat**: This is a single-developer implementation. Third-party integrations (Twilio, Resend, Google Calendar, S3, Supabase Auth) will be **stubbed with placeholders** — the architecture is wired for them, but live API keys are not configured. The focus is on a **fully functional local demo** with real database, real UI, and real business logic.
+
+---
+
+## Proposed Directory Structure
+
+```
+c:\Users\RATNAKSH TYAGI\task\
+├── frontend/                    # Next.js 14+ App Router
+│   ├── src/
+│   │   ├── app/                 # App Router pages
+│   │   │   ├── (auth)/          # Login, Register
+│   │   │   ├── (dashboard)/     # Main authenticated layout
+│   │   │   │   ├── dashboard/
+│   │   │   │   ├── inbox/
+│   │   │   │   ├── bookings/
+│   │   │   │   ├── forms/
+│   │   │   │   ├── inventory/
+│   │   │   │   ├── settings/
+│   │   │   │   └── onboarding/
+│   │   │   ├── book/[slug]/     # Public booking page
+│   │   │   └── layout.tsx
+│   │   ├── components/          # Reusable UI components
+│   │   │   ├── ui/              # ShadCN components
+│   │   │   ├── dashboard/
+│   │   │   ├── inbox/
+│   │   │   ├── bookings/
+│   │   │   ├── forms/
+│   │   │   ├── inventory/
+│   │   │   └── onboarding/
+│   │   ├── lib/                 # Utilities, API client, auth
+│   │   ├── hooks/               # Custom React hooks
+│   │   ├── stores/              # Zustand stores
+│   │   └── types/               # TypeScript types
+│   ├── public/
+│   ├── tailwind.config.ts
+│   ├── next.config.js
+│   └── package.json
+│
+└── backend/                     # FastAPI
+    ├── app/
+    │   ├── main.py              # FastAPI app entry
+    │   ├── config.py            # Settings via pydantic-settings
+    │   ├── database.py          # SQLAlchemy engine/session
+    │   ├── models/              # SQLAlchemy models
+    │   ├── schemas/             # Pydantic v2 schemas
+    │   ├── api/                 # Route handlers
+    │   │   └── v1/
+    │   ├── services/            # Business logic
+    │   ├── repositories/        # Database queries
+    │   └── integrations/        # Stubs for Twilio, Resend, etc.
+    ├── alembic/                 # Migrations
+    ├── alembic.ini
+    ├── requirements.txt
+    └── pyproject.toml
+```
+
+---
+
+## Proposed Changes
+
+### Phase 1: Frontend Scaffolding
+
+#### [NEW] frontend/ (entire Next.js project)
+
+- Initialize via `npx create-next-app@latest` with TypeScript, TailwindCSS, App Router
+- Install ShadCN UI, TanStack Query, Zustand, Lucide icons
+- Create the app layout with sidebar navigation and responsive shell
+- Design system: dark/light mode, color palette, typography (Inter font)
+
+Key files:
+- `src/app/layout.tsx` — root layout with providers (QueryClient, theme)
+- `src/components/ui/` — ShadCN components (Button, Card, Input, Dialog, Table, etc.)
+- `src/components/layout/sidebar.tsx` — main navigation sidebar
+- `src/lib/api.ts` — API client wrapper with base URL config
+- `src/lib/auth.ts` — auth utilities (token storage, guards)
+- `src/stores/auth-store.ts` — Zustand auth state
+
+---
+
+### Phase 2: Backend Scaffolding & Database
+
+#### [NEW] backend/ (entire FastAPI project)
+
+- Python project with FastAPI, SQLAlchemy 2.0, Alembic, Pydantic v2
+- Layered architecture: API → Service → Repository → DB
+
+Key files:
+- `app/main.py` — FastAPI app with CORS, lifespan, router mounts
+- `app/config.py` — Settings (DATABASE_URL, JWT_SECRET, etc.)
+- `app/database.py` — async SQLAlchemy engine + session dependency
+- `app/models/` — All 14 SQLAlchemy models (users, workspaces, contacts, conversations, messages, bookings, booking_types, forms, form_submissions, inventory_items, alerts, integrations, automation_events, staff_roles)
+- `app/schemas/` — Pydantic schemas per model
+- `app/api/v1/` — Route files per module
+- `app/services/` — Business logic per module
+- `app/repositories/` — DB query layer per model
+
+#### [NEW] alembic/ — Database migrations
+
+- Initial migration with all 14 tables
+- Relationships: workspace → contacts → conversations → messages, workspace → bookings, etc.
+
+---
+
+### Phase 3: Auth Module
+
+#### Backend
+- `app/api/v1/auth.py` — `/register`, `/login`, `/me` endpoints
+- `app/services/auth_service.py` — password hashing (bcrypt), JWT token generation
+- `app/lib/security.py` — JWT encode/decode, `get_current_user` dependency
+
+#### Frontend
+- `src/app/(auth)/login/page.tsx` — login page with form
+- `src/app/(auth)/register/page.tsx` — registration page
+- `src/app/(auth)/layout.tsx` — auth layout (centered card)
+- `src/lib/auth.ts` — token management, auth guard middleware
+
+---
+
+### Phase 4: Workspace Onboarding
+
+#### Backend
+- `app/api/v1/workspaces.py` — CRUD + activation endpoint
+- `app/api/v1/onboarding.py` — step tracking
+- `app/services/onboarding_service.py` — validation logic for each step
+
+#### Frontend
+- `src/app/(dashboard)/onboarding/page.tsx` — 8-step wizard UI
+- `src/components/onboarding/step-*.tsx` — individual step components
+- Multi-step form with progress indicator, validation per step
+
+---
+
+### Phase 5: Unified Inbox
+
+#### Backend
+- `app/api/v1/contacts.py` — contact CRUD
+- `app/api/v1/conversations.py` — conversation list + messages
+- `app/api/v1/messages.py` — send/receive messages
+- WebSocket endpoint for real-time message updates
+
+#### Frontend
+- `src/app/(dashboard)/inbox/page.tsx` — 3-column inbox (contacts / conversation / detail)
+- `src/components/inbox/conversation-list.tsx`
+- `src/components/inbox/message-thread.tsx`
+- `src/components/inbox/compose-message.tsx`
+- WebSocket hook for live updates
+
+---
+
+### Phase 6: Booking Management
+
+#### Backend
+- `app/api/v1/bookings.py` — CRUD + state transitions
+- `app/api/v1/booking_types.py` — service type config
+- `app/services/booking_service.py` — availability check, calendar stub
+
+#### Frontend
+- `src/app/(dashboard)/bookings/page.tsx` — staff booking dashboard
+- `src/app/book/[slug]/page.tsx` — public booking page (no auth)
+- `src/components/bookings/booking-calendar.tsx`
+- `src/components/bookings/booking-form.tsx`
+
+---
+
+### Phase 7: Forms Management
+
+#### Backend
+- `app/api/v1/forms.py` — CRUD for form definitions
+- `app/api/v1/form_submissions.py` — submission tracking
+
+#### Frontend
+- `src/app/(dashboard)/forms/page.tsx` — form list + builder
+- `src/components/forms/form-builder.tsx`
+- `src/components/forms/form-renderer.tsx`
+
+---
+
+### Phase 8: Inventory Module
+
+#### Backend
+- `app/api/v1/inventory.py` — CRUD + threshold alerts
+
+#### Frontend
+- `src/app/(dashboard)/inventory/page.tsx` — inventory dashboard
+- `src/components/inventory/item-table.tsx`
+- `src/components/inventory/alert-card.tsx`
+
+---
+
+### Phase 9: Dashboard
+
+#### Backend
+- `app/api/v1/dashboard.py` — aggregated stats endpoint
+
+#### Frontend
+- `src/app/(dashboard)/dashboard/page.tsx` — main dashboard
+- `src/components/dashboard/booking-overview.tsx`
+- `src/components/dashboard/leads-summary.tsx`
+- `src/components/dashboard/forms-tracker.tsx`
+- `src/components/dashboard/inventory-alerts.tsx`
+- `src/components/dashboard/alerts-panel.tsx`
+
+---
+
+### Phase 10: Automation Engine
+
+#### Backend
+- `app/api/v1/automations.py` — automation config + logs
+- `app/services/automation_engine.py` — event listener + action dispatcher
+- Event hooks wired into booking, contact, form, and inventory services
+
+---
+
+## Verification Plan
+
+### Automated Tests
+
+1. **Backend API tests** — after the backend is built, run:
+   ```
+   cd c:\Users\RATNAKSH TYAGI\task\backend
+   pip install pytest httpx
+   python -m pytest tests/ -v
+   ```
+   Tests will cover: auth flow, CRUD for all modules, business logic
+
+2. **Frontend build verification**:
+   ```
+   cd c:\Users\RATNAKSH TYAGI\task\frontend
+   npm run build
+   ```
+   Ensures TypeScript compilation and no build errors
+
+### Browser-Based Verification
+
+After starting both servers, verify via browser:
+1. Auth flow: register → login → redirect to dashboard
+2. Onboarding wizard: complete all 8 steps → workspace activation
+3. Inbox: send/receive messages
+4. Bookings: create booking type → create booking → state transitions
+5. Forms: build a form → fill in a submission
+6. Inventory: add items → verify threshold alerts
+7. Dashboard: all cards render with real data
+
+### Manual Verification (User)
+
+> [!NOTE]
+> After I have the app running locally, I'll ask you to verify the full flow in the browser and provide feedback on the UI/UX.
