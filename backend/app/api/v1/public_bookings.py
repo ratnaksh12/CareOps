@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -59,6 +59,7 @@ async def get_public_booking_type(
 @router.post("/bookings", response_model=BookingOut)
 async def create_public_booking(
     data: dict,  # Raw data to handle nested contact info
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -161,24 +162,27 @@ async def create_public_booking(
     await db.commit()
     await db.refresh(booking)
 
-    # Trigger Automation in a SEPARATE session to avoid stale state
-    booking_id = booking.id
-    try:
-        async with async_session() as auto_db:
-            from app.services.automation import AutomationService
-            await AutomationService.handle_booking_created(booking_id, auto_db)
-    except Exception as e:
-        import logging
-        logging.getLogger("automation").error(f"Automation failed for booking {booking_id}: {e}")
+    # Trigger Automation in Background Task
+    background_tasks.add_task(run_booking_automation, booking.id)
 
     # Return full booking object
     result = await db.execute(
         select(Booking)
         .options(selectinload(Booking.booking_type), selectinload(Booking.contact))
-        .where(Booking.id == booking_id)
+        .where(Booking.id == booking.id)
     )
     booking = result.scalar_one()
     return BookingOut.model_validate(booking)
+
+# Background Wrapper
+async def run_booking_automation(booking_id: str):
+    from app.services.automation import AutomationService
+    import logging
+    try:
+        async with async_session() as auto_db:
+            await AutomationService.handle_booking_created(booking_id, auto_db)
+    except Exception as e:
+        logging.getLogger("automation").error(f"Automation failed for booking {booking_id}: {e}")
 
 
 @router.get("/slots")
