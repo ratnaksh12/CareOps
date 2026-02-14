@@ -3,15 +3,16 @@ import logging
 import sys
 import os
 
-# Add current directory to path so we can import app
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Only configure logging if running as a script
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.database import async_session, engine, Base
 from app.models import User, Workspace, BookingType, InventoryItem, BookingTypeInventoryLink
 from app.security import hash_password
 from sqlalchemy import select
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("seed")
 
 async def seed():

@@ -34,6 +34,7 @@ async def lifespan(app: FastAPI):
         
         # Run Seed Data
         try:
+            # Import inside function to avoid circular imports during startup
             from seed_data import seed
             await seed()
             print("DEBUG: Seed data checked/applied.")
