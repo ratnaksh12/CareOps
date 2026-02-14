@@ -115,7 +115,8 @@ export default function FormsPage() {
     };
 
     const copyPublicLink = (formId: string) => {
-        const url = `${window.location.origin}/public/forms?id=${formId}`;
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+        const url = `${window.location.origin}${basePath}/public/forms?id=${formId}`;
         navigator.clipboard.writeText(url);
         toast.success("Public link copied to clipboard");
     };

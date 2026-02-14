@@ -142,7 +142,8 @@ export default function DashboardPage() {
                         variant="outline"
                         className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all font-medium"
                         onClick={() => {
-                            const url = `${window.location.origin}/public/lead`;
+                            const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+                            const url = `${window.location.origin}${basePath}/public/lead`;
                             navigator.clipboard.writeText(url);
                             alert("Lead Form Link Copied!");
                         }}
