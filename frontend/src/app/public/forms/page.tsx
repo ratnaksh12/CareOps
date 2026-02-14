@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,11 +23,10 @@ import { Loader2, CheckCircle2, AlertCircle, Calendar as CalendarIcon, Clock } f
 import type { Form, BookingType } from "@/types";
 import { format } from "date-fns";
 
-export default function PublicFormPage() {
-    const params = useParams();
-    const formId = params.id as string;
+function FormContent() {
+    const searchParams = useSearchParams();
+    const formId = searchParams.get("id");
     const [formData, setFormData] = useState<Record<string, any>>({});
-    const [title, setTitle] = useState("");
     const [isSubmitted, setIsSubmitted] = useState(false);
 
     // Booking State
@@ -40,6 +39,7 @@ export default function PublicFormPage() {
     const { data: form, isLoading: isFormLoading, error: formError } = useQuery<Form>({
         queryKey: ["public-form", formId],
         queryFn: () => api.get(`/forms/${formId}/public`),
+        enabled: !!formId,
         retry: false,
     });
 
@@ -66,6 +66,7 @@ export default function PublicFormPage() {
 
     const submitMutation = useMutation({
         mutationFn: async (data: any) => {
+            if (!formId) throw new Error("Form ID missing");
             // 1. Submit Form
             const submission = await api.post(`/forms/${formId}/submit`, data);
 
@@ -98,6 +99,18 @@ export default function PublicFormPage() {
             [fieldLabel]: value,
         }));
     };
+
+    if (!formId) {
+        return (
+            <Card className="border-amber-500/20 bg-amber-500/5 m-4">
+                <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+                    <AlertCircle className="h-12 w-12 text-amber-400 mb-4" />
+                    <h2 className="text-xl font-semibold text-white">Invalid Link</h2>
+                    <p className="text-zinc-400 mt-2">The form ID is missing.</p>
+                </CardContent>
+            </Card>
+        );
+    }
 
     if (isFormLoading) {
         return (
@@ -380,3 +393,10 @@ export default function PublicFormPage() {
     );
 }
 
+export default function PublicFormPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-black"><Loader2 className="h-8 w-8 animate-spin text-zinc-500" /></div>}>
+            <FormContent />
+        </Suspense>
+    );
+}

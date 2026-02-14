@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -24,7 +24,7 @@ import type { BookingType } from "@/types";
 
 import { useSearchParams } from "next/navigation";
 
-export default function PublicLeadPage() {
+function LeadContent() {
     const searchParams = useSearchParams();
     const workspaceId = searchParams.get("workspace_id") || searchParams.get("ws");
 
@@ -332,6 +332,14 @@ export default function PublicLeadPage() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+export default function PublicLeadPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-black"><Loader2 className="h-8 w-8 animate-spin text-zinc-500" /></div>}>
+            <LeadContent />
+        </Suspense>
     );
 }
 

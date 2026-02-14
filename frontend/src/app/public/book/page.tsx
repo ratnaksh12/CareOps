@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,10 +15,10 @@ import { toast } from "sonner";
 import { format, addDays, startOfToday, setHours, setMinutes } from "date-fns";
 import type { BookingType, Booking } from "@/types";
 
-export default function PublicBookingPage() {
-    const params = useParams();
+function BookingContent() {
+    const searchParams = useSearchParams();
     const router = useRouter();
-    const typeId = params.typeId as string;
+    const typeId = searchParams.get("typeId");
 
     const [step, setStep] = useState<"date" | "details" | "success">("date");
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -29,6 +29,7 @@ export default function PublicBookingPage() {
     const { data: bookingType, isLoading, error } = useQuery<BookingType>({
         queryKey: ["public-booking-type", typeId],
         queryFn: () => api.get(`/public/booking-types/${typeId}`),
+        enabled: !!typeId,
         retry: false,
     });
 
@@ -59,7 +60,7 @@ export default function PublicBookingPage() {
     };
 
     const handleSubmit = () => {
-        if (!selectedDate || !selectedTime) return;
+        if (!selectedDate || !selectedTime || !typeId) return;
 
         // Construct ISO DateTime
         const [hours, minutes] = selectedTime.split(":").map(Number);
@@ -71,6 +72,18 @@ export default function PublicBookingPage() {
             ...formData
         });
     };
+
+    if (!typeId) {
+        return (
+            <Card className="border-amber-500/20 bg-amber-500/5">
+                <CardContent className="flex flex-col items-center justify-center p-8 text-center">
+                    <AlertCircle className="h-12 w-12 text-amber-400 mb-4" />
+                    <h2 className="text-xl font-semibold text-white">Invalid Link</h2>
+                    <p className="text-zinc-400 mt-2">The booking type ID is missing.</p>
+                </CardContent>
+            </Card>
+        );
+    }
 
     if (isLoading) {
         return <div className="flex h-[50vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-zinc-500" /></div>;
@@ -256,5 +269,13 @@ export default function PublicBookingPage() {
                 </div>
             </div>
         </Card>
+    );
+}
+
+export default function PublicBookingPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-zinc-950"><Loader2 className="h-8 w-8 animate-spin text-zinc-500" /></div>}>
+            <BookingContent />
+        </Suspense>
     );
 }
