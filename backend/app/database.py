@@ -16,7 +16,10 @@ else:
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
-    engine_kwargs["connect_args"] = {"ssl": ssl_context}
+    engine_kwargs["connect_args"] = {
+        "ssl": ssl_context,
+        "prepared_statement_cache_size": 0  # Disable prepared statements for pgbouncer/pooler compatibility
+    }
     engine_kwargs["pool_pre_ping"] = True
     engine_kwargs["pool_size"] = 5
     engine_kwargs["max_overflow"] = 10
